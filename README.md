@@ -98,7 +98,7 @@ O arquivo `backend/uv.lock` também está disponível para quem usa uv e deseja 
 
 ## Arquivos e GitHub
 
-Mantenha `backend` e `frontend` lado a lado: o Flask serve as duas pastas em um único servidor. A pasta `docs` contém o enunciado e as especificações originais.
+Mantenha `backend` e `frontend` lado a lado: o Flask serve as duas pastas em um único servidor.
 
 Não é necessário `.env`, pois não há credenciais ou serviços externos. O `.gitignore` exclui o ambiente virtual, caches, relatórios de teste e eventuais arquivos `.env`. Os textos enviados não são armazenados pela aplicação.
 
