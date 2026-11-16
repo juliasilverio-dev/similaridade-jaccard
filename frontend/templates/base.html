@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Compare dois documentos com a similaridade de Jaccard e entenda as palavras em comum e as limitações da análise.">
+  <title>{% block title %}Comparador de similaridade de Jaccard{% endblock %}</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+  <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+  <header>
+    <div class="masthead shell">
+      <a class="brand" href="{{ url_for('web.index') }}" aria-label="Jaccard — página inicial">
+        <span class="brand-mark" aria-hidden="true">J</span>
+        <span>Jaccard<span class="brand-detail">Análise textual</span></span>
+      </a>
+      <nav aria-label="Navegação da página">
+        <a href="{% if status_code is defined %}{{ url_for('web.index', _anchor='metodo') }}{% else %}#metodo{% endif %}">O método</a>
+        <a href="{% if status_code is defined %}{{ url_for('web.index', _anchor='limitacoes') }}{% else %}#limitacoes{% endif %}">Limitações</a>
+      </nav>
+    </div>
+    <div class="hero shell">
+      <h1>Comparador de similaridade de Jaccard</h1>
+      <p class="hero-description">Compare dois textos usando conjuntos de palavras.</p>
+      {% if resultado is not none %}<a class="result-shortcut" href="#resultado">Ver resultado da comparação <span aria-hidden="true">↓</span></a>{% endif %}
+    </div>
+  </header>
+  <main id="conteudo" class="shell" tabindex="-1">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="shell footer">
+    <p><span class="footer-brand">Jaccard</span> Uma medida de sobreposição lexical.</p>
+    <p>Os textos são processados para esta comparação e não são armazenados pela aplicação.</p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Erro {{ status_code }} — Jaccard{% endblock %}
+{% block content %}
+<section class="panel error-page" aria-labelledby="titulo-erro">
+  <p class="error-code" aria-hidden="true">{{ status_code }}</p>
+  <p class="eyebrow">Vamos tentar de novo</p>
+  <h2 id="titulo-erro">Não foi possível atender à solicitação ({{ status_code }})</h2>
+  <p class="error-message">{{ erro_global }}</p>
+  {% if status_code == 413 %}<p>Insira os textos novamente. O conteúdo que ultrapassou o limite não é reexibido nem foi salvo.</p>{% endif %}
+  <a class="button-link" href="{{ url_for('web.index') }}">Voltar ao formulário</a>
+</section>
+{% endblock %}

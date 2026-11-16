@@ -1,0 +1,20 @@
+# Ambiente local e variáveis privadas
+.venv/
+.env
+.env.*
+!.env.example
+instance/
+
+# Arquivos gerados por Python e ferramentas de teste
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+test-results/
+
+# Arquivos do sistema
+.DS_Store
+Thumbs.db

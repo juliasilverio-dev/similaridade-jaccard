@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}{% if erro_global or erros_campos.documento_a or erros_campos.documento_b %}Revise os documentos{% elif resultado is not none %}Resultado da comparação{% else %}Comparar documentos{% endif %} — Jaccard{% endblock %}
+{% block content %}
+  {% if erro_global %}
+  <section class="error-summary" aria-labelledby="erro-global" tabindex="-1">
+    <h2 id="erro-global">Não foi possível concluir a comparação</h2>
+    <p>{{ erro_global }}</p>
+    <a href="{{ url_for('web.index') }}">Voltar ao formulário</a>
+  </section>
+  {% endif %}
+  {% if erros_campos.documento_a or erros_campos.documento_b %}
+  <section class="error-summary" aria-labelledby="resumo-erros" tabindex="-1">
+    <p class="eyebrow">Confira as entradas</p>
+    <h2 id="resumo-erros">Revise os documentos informados</h2>
+    <ul>
+      {% for campo, mensagens in erros_campos.items() %}
+        {% for mensagem in mensagens %}<li><a href="#{{ campo }}">{{ mensagem }}</a></li>{% endfor %}
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  <section id="comparacao" class="panel workbench" aria-labelledby="titulo-formulario">
+    <div class="section-heading">
+      <div><p class="eyebrow">01 / Compare</p><h2 id="titulo-formulario">Seus documentos</h2></div>
+    </div>
+    <p class="form-instruction">Digite ou cole os textos nos campos abaixo. Ambos são obrigatórios.</p>
+    <form method="post" action="{{ url_for('web.compare') }}" accept-charset="UTF-8">
+      <div class="document-grid">
+      {% for campo, rotulo, letra in [('documento_a', 'Documento A', 'A'), ('documento_b', 'Documento B', 'B')] %}
+        <div class="document-field">
+          <div class="field-heading">
+            <div class="field-title"><span class="document-letter" aria-hidden="true">{{ letra }}</span><label for="{{ campo }}">{{ rotulo }}</label></div>
+            <span class="required-note">Obrigatório</span>
+          </div>
+          <p id="{{ campo }}-ajuda" class="field-help">Máximo de {{ '{:,}'.format(limites.max_caracteres_por_documento).replace(',', '.') }} caracteres por documento.</p>
+          <textarea id="{{ campo }}" name="{{ campo }}" rows="12" required spellcheck="false" aria-describedby="{{ campo }}-ajuda{% if erros_campos[campo] %} {{ campo }}-erro{% endif %}"{% if erros_campos[campo] %} aria-invalid="true"{% endif %}>
+{{ documentos[campo] }}</textarea>
+          {% if erros_campos[campo] %}
+          <div id="{{ campo }}-erro" class="field-error">
+            {% for mensagem in erros_campos[campo] %}<p>{{ mensagem }}</p>{% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+      </div>
+      <div class="form-bottom">
+        <div class="actions">
+          <button type="submit">Comparar documentos <span aria-hidden="true">→</span></button>
+          <a class="secondary-link" href="{{ url_for('web.index') }}">Limpar comparação</a>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  {% if resultado is not none %}
+  <section id="resultado" class="panel result-panel" aria-labelledby="titulo-resultado">
+    <div class="section-heading">
+      <div><p class="eyebrow">02 / Entenda o resultado</p><h2 id="titulo-resultado" tabindex="-1">Resultado da comparação</h2></div>
+    </div>
+    <div class="result-overview">
+      <div class="score-block">
+        <p class="score-label">Similaridade de Jaccard</p>
+        <p class="score">{{ resultado.percentual_formatado }}</p>
+        <meter min="0" max="1" value="{{ resultado.similaridade }}" aria-label="Similaridade de Jaccard">{{ resultado.percentual_formatado }}</meter>
+      </div>
+      <div class="calculation-block">
+        <p class="eyebrow">Memória de cálculo</p>
+        <p class="formula">J(A, B) = |A ∩ B| / |A ∪ B|</p>
+        <p class="calculation">{{ resultado.intersecao.quantidade }} / {{ resultado.uniao.quantidade }} = {{ resultado.percentual_formatado }}</p>
+        <p>A interseção contém as palavras em comum. A união contém todas as palavras distintas dos dois documentos.</p>
+      </div>
+    </div>
+    <div class="metrics-grid">
+      {% for campo, rotulo in [('documento_a', 'Documento A'), ('documento_b', 'Documento B')] %}
+      <div class="metric-card">
+        <h3>{{ rotulo }}</h3>
+        <dl><div><dt>Palavras totais (ocorrências)</dt><dd>{{ resultado[campo].total_palavras }}</dd></div><div><dt>Palavras distintas</dt><dd>{{ resultado[campo].palavras_unicas }}</dd></div></dl>
+      </div>
+      {% endfor %}
+      <div class="metric-card">
+        <h3>Entre os documentos</h3>
+        <dl><div><dt>Palavras distintas compartilhadas (interseção)</dt><dd>{{ resultado.intersecao.quantidade }}</dd></div><div><dt>Palavras distintas na união</dt><dd>{{ resultado.uniao.quantidade }}</dd></div></dl>
+      </div>
+    </div>
+    <p class="field-help">Somente as palavras distintas entram no cálculo.</p>
+    {% if resultado.similaridade == 0 %}
+      <p>Os conjuntos não têm palavras em comum após a normalização.</p>
+    {% elif resultado.similaridade == 1 %}
+      <p>Os conjuntos de palavras são iguais, mesmo que a ordem ou as repetições sejam diferentes.</p>
+    {% else %}
+      <p>O percentual representa a razão entre palavras distintas compartilhadas e palavras distintas na união.</p>
+    {% endif %}
+    <p class="notice">Este resultado indica sobreposição de palavras e não comprova plágio.</p>
+
+    <div class="word-groups">
+    {% for chave, titulo in [('intersecao', 'Palavras em comum'), ('exclusivas_a', 'Palavras exclusivas do documento A'), ('exclusivas_b', 'Palavras exclusivas do documento B')] %}
+      {% set grupo = resultado[chave] %}
+      <section class="word-group" aria-labelledby="grupo-{{ chave }}">
+        <h3 id="grupo-{{ chave }}">{{ titulo }}</h3>
+        <p class="group-count">{{ grupo.quantidade }} {% if grupo.quantidade == 1 %}palavra distinta{% else %}palavras distintas{% endif %}</p>
+        {% if grupo.palavras %}
+        <ul class="words">{% for palavra in grupo.palavras %}<li>{{ palavra }}</li>{% endfor %}</ul>
+        {% else %}<p class="field-help">Nenhuma palavra neste grupo.</p>{% endif %}
+        {% if grupo.omitidas > 0 %}<p class="field-help">Exibindo {{ grupo.palavras | length }} de {{ grupo.quantidade }} palavras; {{ grupo.omitidas }} não exibidas.</p>{% endif %}
+      </section>
+    {% endfor %}
+    </div>
+    <p class="field-help">As palavras aparecem normalizadas, sem diferenças de caixa ou repetições e com pontuação como separadora. O cálculo considera todas as palavras, inclusive as não listadas.</p>
+  </section>
+  {% endif %}
+
+  <section id="exemplo" class="panel example-panel" aria-labelledby="titulo-exemplo">
+    <div class="section-heading"><div><p class="eyebrow">Na prática</p><h2 id="titulo-exemplo">{{ exemplo.titulo }}</h2></div></div>
+    <div class="document-grid example-documents">
+      <div><h3>Documento A — texto de referência</h3><blockquote>{{ exemplo.documento_a }}</blockquote></div>
+      <div><h3>Documento B — texto sob análise</h3><blockquote>{{ exemplo.documento_b }}</blockquote></div>
+    </div>
+    <div class="example-explanation">
+      <div class="example-score"><span>Resultado esperado da demonstração</span><strong>{{ exemplo.percentual_esperado }}</strong><span>6 palavras em comum / 8 na união</span></div>
+      <div><p>Há 6 palavras distintas em comum em uma união de 8. A troca de “desenvolve” por “cria” altera o conjunto, embora o vocabulário permaneça parecido.</p><p>O exemplo auxilia uma revisão humana de possível reaproveitamento textual. Não significa que 75% do texto foi copiado e não comprova plágio.</p></div>
+    </div>
+    <a class="example-link" href="{{ url_for('web.index', exemplo='plagio', _anchor='comparacao') }}">Carregar exemplo <span aria-hidden="true">↗</span></a>
+    <p class="field-help">Ao carregar o exemplo, os textos atuais serão substituídos. Depois, acione Comparar documentos.</p>
+  </section>
+
+  <section id="metodo" class="method-section" aria-labelledby="titulo-metodo">
+    <div class="section-heading"><div><p class="eyebrow">Por trás do número</p><h2 id="titulo-metodo">Como a comparação funciona</h2></div></div>
+    <ol class="method-steps">
+      <li><h3>Palavras distintas</h3><p>Cada texto vira um conjunto. Repetir uma palavra não aumenta o seu peso no cálculo.</p></li>
+      <li><h3>Uma comparação consistente</h3><p>Maiúsculas e minúsculas são equivalentes. Espaços, pontuação e símbolos separam palavras: “bem-estar” equivale a “bem estar”. Acentos são preservados, números são aceitos e artigos e preposições são mantidos.</p></li>
+      <li><h3>Interseção dividida pela união</h3><p>Dividimos a quantidade de palavras distintas em comum pelo total de palavras distintas presentes nos dois textos.</p></li>
+    </ol>
+  </section>
+
+  <section id="limitacoes" class="panel limitations-panel" aria-labelledby="titulo-limitacoes">
+    <p class="eyebrow">Interprete com cuidado</p><h2 id="titulo-limitacoes">Limitações para análise de plágio</h2>
+    <p>Similaridade lexical é um ponto de partida para uma revisão humana. Considere estes limites ao interpretar o resultado.</p>
+    <ul class="limitations-list">
+      <li><strong>Ordem e frequência.</strong> A técnica ignora a ordem das palavras e a frequência das repetições.</li>
+      <li><strong>Vocabulário comum.</strong> Textos do mesmo assunto podem ter escore alto sem cópia. Palavras comuns, como artigos e preposições, também influenciam o escore.</li>
+      <li><strong>Outras formas de escrever.</strong> Sinônimos, paráfrases e traduções podem diminuir a similaridade mesmo quando há reaproveitamento de conteúdo.</li>
+      <li><strong>Trechos pequenos.</strong> Um trecho copiado em um documento muito maior pode resultar em escore global baixo.</li>
+      <li><strong>Apenas duas entradas.</strong> O sistema compara apenas os dois textos fornecidos; não pesquisa fontes na internet nem detecta todas as formas de plágio.</li>
+      <li><strong>Sem veredito automático.</strong> O enunciado não define um limiar de plágio. O escore não mede porcentagem copiada nem probabilidade de plágio.</li>
+    </ul>
+  </section>
+{% endblock %}
