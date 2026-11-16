@@ -61,8 +61,6 @@ Cada documento aceita até **100.000 caracteres** e precisa conter pelo menos um
 - [__init__.py](backend/app/__init__.py): criação do Flask, configuração das pastas e tratamento de erros. [run.py](backend/run.py) inicia o servidor.
 - [templates](frontend/templates) e [styles.css](frontend/static/css/styles.css): páginas HTML com Jinja e aparência da interface.
 
-Para a apresentação, explique a fórmula, mostre o cálculo no código e execute o exemplo de 75%. Depois, demonstre textos iguais (100%), sem palavras em comum (0%) e uma entrada só com pontuação (erro).
-
 ## Testes
 
 <details>
